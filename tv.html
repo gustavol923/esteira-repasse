@@ -243,10 +243,10 @@ let ci = Math.max(0, CO.indexOf(q.get('equipe') || CO[0])), pg = 0;
 const fixo = q.has('equipe');
 
 function nivel(x) {
-  if (teto(x)) { const e = x.dias_fase - TETO[x.fase]; return e >= 5 ? 3 : e >= 2 ? 2 : 1; }
+  if (teto(x)) { const e = x.dias_fase - TETO[x.fase]; return e >= 5 ? 3 : 1; }
   if (x.fase === 'NA CEHOP - INCONFORME' && x.dias_fase >= 3) return 3;
   const e = Math.max((x.dias_fase || 0) - (x.sla_fase ?? 99), (x.dias_bloco || 0) - (x.sla_bloco ?? 99));
-  return e >= 3 ? 3 : e >= 2 ? 2 : 1;
+  return e >= 3 ? 3 : 1;  // sem sub-líder (Gustavo, 09/11/2026): analista ou coordenador
 }
 const cat = x => x.bloco === 'Distrato' ? 'Distrato' : x.tipo === 'Futuro' ? 'Demanda futura' : /^MIGRA/.test(x.fase) ? 'Migração' : 'Reavaliar';
 const CATC = { 'Demanda futura': '#3A3A3C', 'Reavaliar': '#D98A00', 'Migração': '#8E8E93', 'Distrato': '#C7C7CC' };
@@ -296,7 +296,7 @@ function detalhe(E) {
   const lg = el('span', 'lg2'); lg.innerHTML = side ? Object.entries(CATC).map(([k, c]) => `<span><i style="background:${c}"></i>${k.toLowerCase()}</span>`).join('') : '<span><i style="background:var(--red)"></i>fora do prazo</span><span><i style="background:var(--am)"></i>em risco</span><span><i style="background:var(--ok)"></i>no prazo</span><span><i style="background:var(--so)"></i>sem SLA</span>';
   pgb.append(bp, el('span', null, R.length ? `${dpg * per + 1}–${Math.min(R.length, dpg * per + per)} de ${R.length}` : 'Nenhum processo neste filtro'), bn, lg);
 }
-const NV = { 3: ['Coordenador', 'p3', 'var(--gr)'], 2: ['Sub-líder', 'p2', 'var(--am)'], 1: ['Analista', 'p1', 'var(--so)'] };
+const NV = { 3: ['Coordenador', 'p3', 'var(--gr)'], 1: ['Analista', 'p1', 'var(--so)'] };
 
 function draw() {
   const co = CO[ci], E = D.equipe.filter(x => x.coord === co), est = E.filter(x => BL.includes(x.bloco));
@@ -350,7 +350,7 @@ function draw() {
 
   const L = est.filter(x => fora(x) || teto(x)).map(x => ({ x, n: nivel(x) })).sort((a, b) => (b.n - a.n) || ((b.x.dias_bloco || 0) - (a.x.dias_bloco || 0)));
   const cn = k => L.filter(l => l.n === k).length;
-  document.getElementById('act-n').textContent = `${L.length} processos · coordenador ${cn(3)} · sub-líder ${cn(2)} · analista ${cn(1)}`;
+  document.getElementById('act-n').textContent = `${L.length} processos · coordenador ${cn(3)} · analista ${cn(1)}`;
   const box = document.getElementById('act'); box.replaceChildren();
   const mk = ({ x, n }) => { const a = el('div', 'a'); const bd = el('i', 'bd'); bd.style.background = NV[n][2];
     const p = el('div'); p.append(el('div', 'p', x.id.split(' · ')[0] + ' · ' + x.analista), el('div', 'm', x.id.split(' · ').slice(1).join(' · ')));
