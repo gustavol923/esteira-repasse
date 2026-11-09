@@ -145,6 +145,20 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--
 .fxt td:first-child{font-size:1.85vh;font-weight:700}
 .fxt .cell{background:#F2F2F4}.fxt .cell.old{background:#FFF4E0}.fxt .cell.old span{color:#9A5B00}
 .dr.fx{grid-template-columns:1.2vh minmax(0,1.5fr) minmax(0,3fr) 6.5vw}.dr .hx{font-size:1.55vh;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.dr .n2.big{font-size:2vh;font-weight:800}.dr.fx{align-items:start;padding:.8vh .4vw}.dr .m.over{color:var(--red);font-weight:700}
+.cell.ck{cursor:pointer;transition:box-shadow .12s,transform .12s}.cell.ck:hover{box-shadow:0 0 0 .3vh var(--gr) inset;transform:translateY(-.2vh)}
+.eqr{display:grid;grid-template-columns:4vh minmax(0,1fr) 9vw;gap:1vw;align-items:center;padding:1.1vh 1vw;border-radius:1.1vh;background:#FAFAFB}
+.eqr.me{background:#EEF6F1;box-shadow:inset .4vw 0 0 var(--ok)}
+.eqr .pos{font-size:2.6vh;font-weight:800;color:var(--mu)}.eqr .tt{display:flex;justify-content:space-between;align-items:baseline;gap:1vw;margin-bottom:.6vh}.eqr .tt b{font-size:2.4vh;font-weight:800}.eqr .tt span{font-size:1.45vh;color:var(--mu)}
+.eqr .bb{height:1.4vh;border-radius:.7vh;background:#E9E9EC;overflow:hidden}.eqr .bb i{display:block;height:100%;background:var(--gr)}.eqr.me .bb i{background:var(--ok)}
+.eqr .v{text-align:right;display:flex;flex-direction:column}.eqr .v b{font-size:4vh;font-weight:800;line-height:1}.eqr .v span{font-size:1.35vh;color:var(--mu)}
+.pod{display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:.8vw;align-items:end;flex:1;min-height:0;padding:0 2vw}
+.pc{display:flex;flex-direction:column;align-items:center;text-align:center;gap:.3vh}
+.pc .nm{font-size:2.1vh;font-weight:800;line-height:1.15}.pc .eqn{font-size:1.4vh;color:var(--mu);font-weight:600}.pc .nv{font-size:4.6vh;font-weight:800;line-height:1.05;color:var(--gr)}
+.pc .stp{width:100%;border-radius:1vh 1vh 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:1vh;font-size:2.4vh;font-weight:800;color:#fff;background:#8E8E93}
+.pc.pd1 .stp{height:19vh;background:var(--ok)}.pc.pd2 .stp{height:13vh;background:#5A5A5E}.pc.pd3 .stp{height:9vh;background:#8E8E93}.pc.pd1 .nv{color:var(--ok-ink);font-size:5.6vh}.pc .nm.sm2{font-size:1.6vh;font-weight:700;line-height:1.3}
+.rk4{display:grid;grid-template-columns:1fr 1fr;column-gap:1.4vw;border-top:1px solid var(--li);padding-top:1vh}
+.rk4 .r{display:grid;grid-template-columns:3vw minmax(0,1fr) auto 2.4vw;gap:.5vw;align-items:baseline;font-size:1.6vh;padding:.45vh 0;border-bottom:1px solid #F3F3F5}
+.rk4 .r span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rk4 .r em{font-style:normal;color:var(--mu);font-size:1.3vh}.rk4 .r b{text-align:right;font-weight:800}
 </style>
 </head>
 <body>
@@ -210,22 +224,23 @@ function detalhe(E) {
   if (!selB) { box.hidden = true; bot.hidden = false; kr.hidden = false; sg.style.gridTemplateRows = ''; return; }
   box.hidden = false; bot.hidden = true; kr.hidden = true; sg.style.gridTemplateRows = '28vh minmax(0,1fr)';
   const side = selB === 'Fora da esteira';
-  const all = E.filter(x => x.bloco === selB || (side && x.bloco === 'Distrato'));
+  const all = selB === 'SEM' ? E.filter(x => BL.includes(x.bloco) && x.situacao === 'Fase sem SLA') : E.filter(x => x.bloco === selB || (side && x.bloco === 'Distrato'));
   const fk = x => side ? cat(x) : x.fase;
   const R = all.filter(x => (!selF || fk(x) === selF) && (!selAn || x.analista === selAn));
   const ORD = { 'Bloco estourado': 0, 'Fase estourada': 1, 'Em risco': 2, 'Fase sem SLA': 3, 'No prazo': 4 };
   R.sort(side ? (a, b) => (b.d_venda_hoje || 0) - (a.d_venda_hoje || 0) : (a, b) => ((ORD[a.situacao] ?? 9) - (ORD[b.situacao] ?? 9)) || ((b.dias_bloco || 0) - (a.dias_bloco || 0)));
-  const nfo = all.filter(fora).length;
-  const h = el('div', 'dh'); h.append(el('h2', null, (NOME[selB] || selB) + ' · ' + all.length + ' processos'));
+  const nfo = R.filter(fora).length;
+  const h = el('div', 'dh'); h.append(el('h2', null, (selB === 'SEM' ? 'Parados em fase sem prazo' : NOME[selB] || selB) + (selAn ? ' · ' + selAn : '') + ' · ' + R.length + ' processos'));
   const sub = el('span', 'sub'); sub.innerHTML = side ? 'Ordenado por dias desde a venda' : (nfo ? `<b>${nfo} fora do prazo</b> · fora do prazo primeiro` : 'todos no prazo');
   const cl = el('button', null, '✕ Fechar'); cl.onclick = () => { fecha(); pages = draw(); }; h.append(sub, cl);
   const chips = (lb, vals, cur, set, cntF) => { const f = el('div', 'fl'); f.appendChild(el('span', 'lb', lb)); const mk = (v, t) => { const b = el('button', cur === v ? 'on' : '', t); if (cntF && v && cntF(v)) b.appendChild(el('b', null, cntF(v) + ' fora')); b.onclick = () => { set(v); dpg = 0; pausa = Date.now() + 120000; pages = draw(); }; return b; };
-    f.appendChild(mk('', 'Todas (' + all.length + ')')); vals.forEach(([v, n]) => f.appendChild(mk(v, (side ? v : CURTA(v)) + ' ' + n))); return f; };
-  const cf = {}; all.forEach(x => cf[fk(x)] = (cf[fk(x)] || 0) + 1);
+    f.appendChild(mk('', 'Todas (' + base.length + ')')); vals.forEach(([v, n]) => f.appendChild(mk(v, (side ? v : CURTA(v)) + ' ' + n))); return f; };
+  const base = all.filter(x => !selAn || x.analista === selAn); const cf = {}; base.forEach(x => cf[fk(x)] = (cf[fk(x)] || 0) + 1);
   const fases = Object.entries(cf).sort((a, b) => side ? b[1] - a[1] : fo(a[0]) - fo(b[0]));
   const ca = {}; all.forEach(x => ca[x.analista] = (ca[x.analista] || 0) + 1);
   const filtros = el('div'); filtros.style.display = 'flex'; filtros.style.flexDirection = 'column'; filtros.style.gap = '.6vh';
-  filtros.append(chips(side ? 'Tipo' : 'Fase', fases, selF, v => selF = v, side ? null : v => all.filter(x => x.fase === v && fora(x)).length));
+  filtros.append(chips(side ? 'Tipo' : 'Fase', fases, selF, v => selF = v, side ? null : v => base.filter(x => x.fase === v && fora(x)).length));
+  if (selAn) { const b = el('button', 'on', selAn + '  ✕'); b.title = 'Ver a equipe toda'; b.onclick = () => { selAn = ''; dpg = 0; pausa = Date.now() + 120000; pages = draw(); }; const f = filtros.firstChild; f.appendChild(el('span', 'lb', ' Analista')); f.appendChild(b); }
   const dl = el('div', 'dl');
   const hd = el('div', 'dr hd'); (side ? ['', 'Cliente – unidade · empreendimento', 'Analista', 'Último histórico', 'Desde a venda', 'Tipo'] : ['', 'Cliente – unidade · empreendimento', 'Analista', 'Fase', 'Dias na fase', 'Dias no bloco']).forEach((t, i) => { const c = el('span', i >= 4 ? 'n2' : '', t); hd.appendChild(c); });
   const COR = { 'Bloco estourado': 'var(--red)', 'Fase estourada': 'var(--red)', 'Em risco': 'var(--am)', 'No prazo': 'var(--ok)', 'Fase sem SLA': 'var(--so)' };
@@ -283,7 +298,7 @@ function draw() {
       const fz = el('span', 'fz'); Object.keys(cnt).sort((a, z) => fo(a) - fo(z)).forEach(f => { const s = el('span'); s.append(el('span', null, CURTA(f)), el('b', null, cnt[f])); fz.appendChild(s); });
       const f = r.filter(fora).length; st.append(fz, el('span', 'late' + (f ? '' : ' z'), f ? f + ' fora do prazo' : 'no prazo'));
     }
-    if (r.length) { st.appendChild(el('span', 'hint', selB === b ? '✕' : '›')); st.title = selB === b ? 'Fechar' : 'Ver processos'; st.onclick = () => { if (selB === b) fecha(); else { selB = b; selF = ''; selAn = ''; dpg = 0; pausa = Date.now() + 120000; } pages = draw(); }; }
+    if (r.length) { st.appendChild(el('span', 'hint', selB === b ? '✕' : '›')); st.title = selB === b ? 'Fechar' : 'Ver processos'; st.onclick = () => { if (selB === b && !selAn) fecha(); else { selB = b; selF = ''; selAn = ''; dpg = 0; pausa = Date.now() + 120000; } pages = draw(); }; }
     if (selB === b) st.classList.add('sel');
     pp.appendChild(st);
   });
@@ -293,7 +308,9 @@ function draw() {
   H.replaceChildren(hr, ...D.coords[co].map(a => { const tr = el('tr'); tr.appendChild(el('td', null, a));
     [...BL, 'S'].forEach(b => { const r = E.filter(x => x.analista === a && (b === 'S' ? x.situacao === 'Fase sem SLA' && BL.includes(x.bloco) : x.bloco === b)); const f = b === 'S' ? r.filter(teto).length : r.filter(fora).length;
       const d = el('div', 'cell' + (!r.length ? ' z' : b === 'S' ? (f ? ' w' : '') : f >= 4 ? ' x3' : f >= 2 ? ' x2' : f ? ' x1' : ''));
-      d.append(el('b', null, r.length || '·'), el('span', null, !r.length ? ' ' : f ? f + (b === 'S' ? ' acima do teto' : ' fora') : 'no prazo')); const td = el('td'); td.appendChild(d); tr.appendChild(td); });
+      d.append(el('b', null, r.length || '·'), el('span', null, !r.length ? ' ' : f ? f + (b === 'S' ? ' acima do teto' : ' fora') : 'no prazo'));
+      if (r.length) { d.classList.add('ck'); d.title = 'Ver processos de ' + a; d.onclick = () => { selB = b === 'S' ? 'SEM' : b; selAn = a; selF = ''; dpg = 0; pausa = Date.now() + 120000; pages = draw(); }; }
+      const td = el('td'); td.appendChild(d); tr.appendChild(td); });
     return tr; }));
 
   const L = est.filter(x => fora(x) || teto(x)).map(x => ({ x, n: nivel(x) })).sort((a, b) => (b.n - a.n) || ((b.x.dias_bloco || 0) - (a.x.dias_bloco || 0)));
@@ -418,29 +435,48 @@ function cobranca() {
 function meta() {
   const s = document.getElementById('s-meta'); s.style.gridTemplateRows = 'auto minmax(0,1fr)';
   const c = D.cal, tot = D.meta.reduce((a, r) => a + r.assinados, 0), ritmo = c.dias_uteis_passados ? c.assinados_ate_ontem / c.dias_uteis_passados : 0, proj = Math.round(c.assinados_ate_ontem + ritmo * c.dias_uteis_restantes), rest = c.dias_uteis_restantes;
-  const h = card('dk'); h.style.gridColumn = '1 / -1';
-  const top = el('div', 'g2'); top.style.gridTemplateColumns = '1.2fr 1fr 1fr 1fr';
-  const blk = (k, v, sub) => { const d = el('div'); d.style.display = 'flex'; d.style.flexDirection = 'column'; d.style.gap = '.4vh'; d.append(el('span', 'k', k), el('span', 'n', v), el('span', 's', sub)); return d; };
-  top.append(blk('Assinados no mês · gerência', nf.format(tot) + ' / 700', 'minuta e assinatura no mês · sem distratos'), blk('Ritmo atual', n1(ritmo), 'por dia útil completo'), blk('Projeção no ritmo', nf.format(proj), proj >= 700 ? 'chega a 700' : 'faltariam ' + (700 - proj) + ' para 700'), blk('Dias úteis restantes', rest, 'contando hoje · ' + D.rodada.corte));
-  top.querySelectorAll('.n').forEach((n, i) => { n.style.fontSize = i ? '6vh' : '7vh'; if (i === 2 && proj < 700) n.style.color = '#FF8A8F'; });
-  const bar = el('div', 'mbar'); bar.style.background = 'rgba(255,255,255,.14)'; const pc = v => Math.min(100, v / 1000 * 100) + '%';
+  const h = card('dk'); h.style.padding = '1.8vh 1.6vw';
+  const top = el('div', 'g2'); top.style.gridTemplateColumns = '1.3fr 1fr 1fr 1.3fr'; top.style.alignItems = 'end';
+  const blk = (k, v, sub, cor) => { const d = el('div'); d.style.display = 'flex'; d.style.flexDirection = 'column'; d.style.gap = '.3vh'; const n = el('span', 'n', v); n.style.fontSize = '6.2vh'; if (cor) n.style.color = cor; d.append(el('span', 'k', k), n, el('span', 's', sub)); return d; };
+  const pd = m => rest ? Math.ceil(Math.max(0, m - tot) / rest) : 0;
+  top.append(blk('Assinados no mês', nf.format(tot) + ' / 700', 'gerência · minuta e assinatura no mês'), blk('Ritmo atual', n1(ritmo), 'por dia útil'),
+    blk('Projeção', nf.format(proj), proj >= 700 ? 'chega a 700' : 'faltariam ' + (700 - proj) + ' para 700', proj >= 700 ? '#7FD6A1' : '#FF8A8F'),
+    blk('Precisa por dia útil', pd(700), `para 700 · ${pd(800)} para 800 · ${pd(900)} para 900 · ${rest} dias úteis`));
+  const bar = el('div', 'mbar'); bar.style.background = 'rgba(255,255,255,.14)'; bar.style.margin = '2.2vh 0 2.6vh'; const pc = v => Math.min(100, v / 1000 * 100) + '%';
   const f = el('div', 'f'); f.style.width = pc(tot); f.style.background = '#2FBF67'; const p = el('div', 'pj'); p.style.width = pc(proj); p.style.borderColor = '#fff'; bar.append(f, p);
   [700, 800, 900].forEach(m => { const k = el('div', 'k2'); k.style.left = pc(m); const sp = el('span', null, m); sp.style.color = '#fff'; k.appendChild(sp); bar.appendChild(k); });
   h.append(top, bar);
-  const dg = el('div', 'deg'); [700, 800, 900].forEach(m => { const fa = Math.max(0, m - tot), pd = rest ? Math.ceil(fa / rest) : 0, d = el('div'); d.append(el('span', 't', 'Meta ' + m), el('b', null, fa ? nf.format(fa) : 'Batida'), el('span', null, fa ? `faltam · ${pd} por dia útil` : ''), el('span', proj >= m ? 'yes' : 'no', proj >= m ? 'Chega no ritmo atual' : 'Não chega no ritmo atual (−' + (m - proj) + ')')); dg.appendChild(d); });
-  const c1 = card('', el('span', 'k', 'O que falta para cada degrau'), dg);
-  const eq = {}; D.meta.forEach(r => eq[r.equipe] = (eq[r.equipe] || 0) + r.assinados); const EQ = Object.entries(eq).sort((a, b) => b[1] - a[1]), mx = Math.max(1, ...EQ.map(e => e[1]));
-  const hb = el('div', 'hb'); hb.style.gridTemplateColumns = 'minmax(0,7vw) minmax(0,1fr) 7vw';
-  EQ.forEach(([e, k]) => { const b = el('div', 'b'); const i = el('i', e.includes(CO[ci]) ? 'me' : ''); i.style.width = k / mx * 100 + '%'; b.appendChild(i); hb.append(el('span', null, e.replace('Equipe ', '').replace('Patricia', 'Patrícia')), b, el('b', null, k + ' · ' + Math.round(k / tot * 100) + '%')); });
-  c1.append(el('span', 'k', 'Por equipe'), hb);
-  const AN = D.meta.slice().sort((a, b) => b.assinados - a.assinados), amx = Math.max(1, ...AN.map(a => a.assinados));
-  const g = el('div', 'an2'); AN.forEach((a, i) => { const r = el('div', 'r'); const bb = el('div', 'bb'); const ii = el('i'); ii.style.width = a.assinados / amx * 100 + '%'; bb.appendChild(ii);
-    const nmA = el('span'); nmA.append(document.createTextNode(a.analista.split(' ').slice(0, 2).join(' ') + ' '), el('em', null, a.equipe.replace('Equipe ', '').replace('Patricia', 'Patrícia'))); r.append(el('em', null, (i + 1) + 'º'), nmA, bb, el('b', null, a.assinados)); g.appendChild(r); });
-  const c2 = card('', el('span', 'k', 'Por analista · contam para a meta'), g);
-  const r2 = el('div', 'g2'); r2.style.gridTemplateColumns = '1fr'; r2.append(c1);
+
+  // por equipe
+  const eq = {}; D.meta.forEach(r => eq[r.equipe] = (eq[r.equipe] || 0) + r.assinados);
+  const EQ = Object.entries(eq).sort((a, b) => b[1] - a[1]), mx = Math.max(1, ...EQ.map(e => e[1]));
+  const ce = card(''); ce.style.gap = '1.4vh'; ce.appendChild(el('h2', 'h2', 'Por equipe'));
+  EQ.forEach(([e, k], i) => { const nmE = e.replace('Equipe ', '').replace('Patricia', 'Patrícia'), me = e.includes(CO[ci]);
+    const M = D.meta.filter(r => r.equipe === e), mxA = Math.max(0, ...M.map(r => r.assinados)), tops = M.filter(r => r.assinados === mxA).map(r => r.analista.split(' ')[0] === 'Gustavo' ? 'Gustavo F.' : r.analista.split(' ')[0]);
+    const best = M.length ? { analista: tops.join(', ').replace(/, ([^,]*)$/, ' e $1'), assinados: mxA } : null;
+    const r = el('div', 'eqr' + (me ? ' me' : '')); const pos = el('span', 'pos', (i + 1) + 'º');
+    const mid = el('div'); const tt = el('div', 'tt'); tt.append(el('b', null, nmE), el('span', null, best ? 'destaque: ' + best.analista + ' (' + best.assinados + ')' : ''));
+    const bb = el('div', 'bb'); const ii = el('i'); ii.style.width = k / mx * 100 + '%'; bb.appendChild(ii); mid.append(tt, bb);
+    const v = el('div', 'v'); v.append(el('b', null, k), el('span', null, Math.round(k / tot * 100) + '% da gerência'));
+    r.append(pos, mid, v); ce.appendChild(r); });
+
+  // pódio de analistas
+  const AN = D.meta.slice().sort((a, b) => b.assinados - a.assinados || a.analista.localeCompare(b.analista));
+  const nmA = a => a.analista.split(' ').slice(0, 2).join(' '), eqA = a => a.equipe.replace('Equipe ', '').replace('Patricia', 'Patrícia');
+  const cp = card(''); cp.style.gap = '1.2vh'; cp.appendChild(el('h2', 'h2', 'Pódio dos analistas'));
+  const pod = el('div', 'pod');
+  // empate conta: cada degrau do pódio é um número de assinados (1º, 2º e 3º maiores valores)
+  const vals = [...new Set(AN.map(a => a.assinados))], G = vals.slice(0, 3).map(v => AN.filter(a => a.assinados === v));
+  const fn = a => a.analista.split(' ')[0] === 'Gustavo' ? 'Gustavo F.' : a.analista.split(' ')[0] + (AN.filter(b => b.analista.split(' ')[0] === a.analista.split(' ')[0]).length > 1 ? ' ' + a.analista.split(' ')[1][0] + '.' : '');
+  [[1, '2º'], [0, '1º'], [2, '3º']].forEach(([i, t]) => { const g = G[i]; if (!g) return; const col = el('div', 'pc pd' + (i + 1));
+    if (g.length === 1) col.append(el('div', 'nm', nmA(g[0])), el('div', 'eqn', eqA(g[0])));
+    else { col.append(el('div', 'nm sm2', g.map(fn).join(', ').replace(/, ([^,]*)$/, ' e $1')), el('div', 'eqn', g.length + ' empatados')); }
+    col.append(el('div', 'nv', g[0].assinados)); const st = el('div', 'stp'); st.textContent = t; col.appendChild(st); pod.appendChild(col); });
+  const rest4 = el('div', 'rk4'); AN.filter(a => !G.flat().includes(a)).forEach(a => { const r = el('div', 'r'); r.append(el('em', null, (vals.indexOf(a.assinados) + 1) + 'º'), el('span', null, nmA(a)), el('em', null, eqA(a)), el('b', null, a.assinados)); rest4.appendChild(r); });
+  cp.append(pod, rest4);
+  const r2 = el('div', 'g2'); r2.style.gridTemplateColumns = '1fr 1.35fr'; r2.append(ce, cp);
   s.replaceChildren(h, r2);
 }
-
 function foraTela() {
   const co = CO[ci], s = document.getElementById('s-fora'); s.style.gridTemplateRows = 'auto minmax(0,1fr)';
   const E = D.equipe.filter(x => x.coord === co && (x.bloco === 'Fora da esteira' || x.bloco === 'Distrato'));
