@@ -161,6 +161,10 @@ let _rz; window.addEventListener('resize', () => { clearTimeout(_rz); _rz = setT
 .tv-dhead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .tv-close { font: inherit; font-size: clamp(.8rem, .86vw, 1rem); font-weight: 700; border: 1px solid var(--mc-line); background: var(--mc-card); color: var(--mc-ink); border-radius: 999px; padding: 6px 16px; cursor: pointer; }
 .tv-close:hover { background: var(--mc-bg); }
+.tv-dact { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tv-fsel { display: inline-flex; align-items: center; gap: 8px; font-size: clamp(.8rem, .86vw, 1rem); font-weight: 700; color: var(--mc-muted); }
+.tv-fsel select { font: inherit; font-weight: 600; color: var(--mc-ink); background: var(--mc-card); border: 1px solid var(--mc-line); border-radius: 999px; padding: 6px 14px; cursor: pointer; max-width: 22rem; }
+.tv-fsel select:focus-visible { outline: 3px solid var(--mc-graphite); outline-offset: 2px; }
 .tv-close:focus-visible { outline: 3px solid var(--mc-graphite); outline-offset: 2px; }
 .tv-tbox { overflow: auto; max-height: 28rem; border-radius: 10px; border: 1px solid var(--mc-line); }
 .tv-table { width: 100%; border-collapse: collapse; font-size: clamp(.82rem, .88vw, 1.05rem); font-variant-numeric: tabular-nums; }
@@ -334,7 +338,7 @@ let _rz; window.addEventListener('resize', () => { clearTimeout(_rz); _rz = setT
   </section>
 
   <section class="tv-tile tv-drawer" id="detalhe" hidden>
-    <div class="tv-dhead"><h2 class="tv-h2" id="det-titulo">Processos do bloco</h2><button type="button" class="tv-close" id="det-fechar">Fechar</button></div>
+    <div class="tv-dhead"><h2 class="tv-h2" id="det-titulo">Processos do bloco</h2><span class="tv-dact"><label class="tv-fsel" for="det-fase">Fase <select id="det-fase"><option value="">Todas as fases</option></select></label><button type="button" class="tv-close" id="det-fechar">Fechar</button></span></div>
     <p class="tv-note">Dias em dias úteis. Fora do prazo aparece primeiro, em vermelho. Fases sem SLA na régua ficam sem prazo.</p>
     <div class="tv-tbox">
       <table class="tv-table" id="tb-det" data-source="equipe" data-row-key="id">
@@ -625,7 +629,7 @@ dash.calc('travas', {
         }
         if (r.bloco !== 'Assinado' && !side) { const l = document.createElement('span'); l.className = 'late' + (r.fora_prazo ? '' : ' zero'); l.textContent = r.fora_prazo ? r.fora_prazo + ' fora do prazo' : 'no prazo'; st.appendChild(l); }
         const op = document.createElement('span'); op.className = 'open'; op.textContent = window.tvOpen === r.bloco ? 'fechar ▲' : 'abrir ▼'; st.appendChild(op);
-        st.addEventListener('click', () => { window.tvOpen = window.tvOpen === r.bloco ? null : r.bloco; window.tvDraw(); if (window.tvOpen) document.getElementById('detalhe').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
+        st.addEventListener('click', () => { window.tvFase = ''; window.tvOpen = window.tvOpen === r.bloco ? null : r.bloco; window.tvDraw(); if (window.tvOpen) document.getElementById('detalhe').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
         hover(st, () => [line(LBL[r.bloco] || r.bloco, 'h'), line(`${nf.format(r.n)} processos agora`), line(`Entraram hoje: ${r.entraram_hoje}`), line(`Fora do prazo: ${r.fora_prazo}`)]);
         return r.bloco === 'Fora da esteira' ? [gap, st] : [st];
       }));
@@ -676,13 +680,22 @@ dash.calc('travas', {
     fillTable(tf, d.data.filter(x => mine(x) && (x.situacao === 'Bloco estourado' || x.situacao === 'Fase estourada')).sort(sort), false, true);
     if (window.tvOpen) {
       det.hidden = false;
-      const rows = d.data.filter(x => mine(x) && x.bloco === window.tvOpen).sort((a, b) => (fo(a.fase) - fo(b.fase)) || sort(a, b));
+      const todas = d.data.filter(x => mine(x) && x.bloco === window.tvOpen).sort((a, b) => (fo(a.fase) - fo(b.fase)) || sort(a, b));
+      const cntF = {}; todas.forEach(x => cntF[x.fase] = (cntF[x.fase] || 0) + 1);
+      if (window.tvFase && !cntF[window.tvFase]) window.tvFase = '';
+      const sel = document.getElementById('det-fase');
+      sel.replaceChildren(Object.assign(document.createElement('option'), { value: '', textContent: `Todas as fases (${nf.format(todas.length)})` }),
+        ...Object.keys(cntF).sort((x, y) => fo(x) - fo(y)).map(fz => Object.assign(document.createElement('option'), { value: fz, textContent: `${curta(fz)} (${nf.format(cntF[fz])})` })));
+      sel.value = window.tvFase || '';
+      const rows = window.tvFase ? todas.filter(x => x.fase === window.tvFase) : todas;
       const fora = rows.filter(x => x.situacao === 'Bloco estourado' || x.situacao === 'Fase estourada').length;
-      document.getElementById('det-titulo').textContent = `${LBL[window.tvOpen] || window.tvOpen}${window.tvA === 'Equipe' ? '' : ' · ' + window.tvA} · ${nf.format(rows.length)} processos · ${fora ? fora + ' fora do SLA' : 'nenhum fora do SLA'}`;
+      document.getElementById('det-titulo').textContent = `${LBL[window.tvOpen] || window.tvOpen}${window.tvA === 'Equipe' ? '' : ' · ' + window.tvA}${window.tvFase ? ' · ' + curta(window.tvFase) : ''} · ${nf.format(rows.length)} processos · ${fora ? fora + ' fora do SLA' : 'nenhum fora do SLA'}`;
       fillTable(td, rows, true);
     } else { det.hidden = true; td.replaceChildren(); }
   }
   window.tvDraw = draw;
+  window.tvFase = '';
+  document.getElementById('det-fase').addEventListener('change', e => { window.tvFase = e.target.value; drawTables(); });
   document.querySelectorAll('.tv-coord button').forEach(b => b.addEventListener('click', () => { if (window.tvC === b.dataset.coord) return; window.tvC = b.dataset.coord; window.tvA = 'Equipe'; window.tvOpen = null; draw(); window.tvDraw2 && window.tvDraw2(); }));
   document.getElementById('ver-equipe').addEventListener('click', () => { window.tvA = 'Equipe'; window.tvOpen = null; draw(); });
   document.getElementById('det-fechar').addEventListener('click', () => { window.tvOpen = null;
