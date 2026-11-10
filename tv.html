@@ -213,6 +213,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--
 .cs .ic.y{background:#E9E9EC;color:var(--gr)}.cs .ic.n{background:var(--red);color:#fff}.cs .tx{min-width:0}.cs .tx .p.no{color:var(--red)}
 .nada{display:grid;place-items:center;height:100%;font-size:2.4vh;color:var(--mu);text-align:center;line-height:1.5}
 .eqb{font:inherit;cursor:pointer;transition:background .15s,color .15s,border-color .15s}.eqb:not(.on):hover{border-color:var(--gr);color:var(--ink)}
+.cs .ic.w{background:#fff;color:var(--gr);border:2px solid var(--gr);font-size:1.6vh;line-height:1}.cs .tx .p.fl{font-weight:800}.cfh .ft.lk{cursor:pointer;display:block;white-space:nowrap}.cfh .ft.lk:hover{text-decoration:underline}.cfh .ft b{color:#fff}
 </style>
 </head>
 <body>
@@ -592,13 +593,14 @@ function confTela() {
   const h = el('div', 'cfh' + (!cfA ? ' on' : '')); h.onclick = go(() => { cfA = ''; });
   const tw = el('div', 'two'); const d1 = el('div'), d2 = el('div'); d1.append(el('b', null, com), el('span', null, 'com confissão')); d2.append(el('b', 'r', sem), el('span', null, 'sem confissão')); tw.append(d1, d2);
   const t1 = el('div', 'trk'), i1 = el('i'); t1.appendChild(i1); bars.push([i1, com / E.length]);
-  h.append(el('span', 'k', 'Conforme em diante · ' + E.length + ' processos'), tw, t1, el('span', 'ft', 'Clientes que assinaram a confissão: ' + E.filter(x => x.conf === 'ass').length + ' de ' + com + ' enviadas'));
+  h.append(el('span', 'k', 'Conforme em diante · ' + E.length + ' processos'), tw, t1, el('span', 'ft', ''));
+  { const fe = E.filter(x => x.conf === 'env').length, ft = h.lastChild; ft.innerHTML = `Das ${com} enviadas: <b>${com - fe}</b> o cliente já assinou · <b class="fc">${fe}</b> falta o cliente`; ft.classList.add('lk'); ft.title = 'Ver as que falta o cliente assinar'; ft.onclick = ev => { ev.stopPropagation(); cfS = 'env'; cpg = 0; pausa = Date.now() + 120000; confTela(); }; }
   top.appendChild(h);
   D.coords[co].forEach(a => { const L = E.filter(x => x.analista === a), c2 = L.filter(temC).length, s2 = L.length - c2;
     const c = el('div', 'cfa' + (cfA === a ? ' on' : '')); c.title = cfA === a ? 'Ver a equipe toda' : 'Ver só ' + a; c.onclick = go(() => { cfA = cfA === a ? '' : a; });
     const r2 = el('div', 'row2'); r2.append(el('b', s2 ? '' : 'z', s2), el('span', null, s2 === 1 ? 'sem confissão' : 'sem confissão'));
     const t2 = el('div', 'trk'), i2 = el('i'); t2.appendChild(i2); bars.push([i2, L.length ? c2 / L.length : 0]);
-    const ft = el('span', 'ft'); ft.innerHTML = `<b>${c2}</b> de ${L.length} com confissão`;
+    const ft = el('span', 'ft'); const e2 = L.filter(x => x.conf === 'env').length; ft.innerHTML = `<b>${c2}</b> de ${L.length} com confissão` + (e2 ? ` · <b>${e2}</b> falta o cliente` : '');
     c.append(el('span', 'nm', a), r2, t2, ft); top.appendChild(c); });
   // filtros
   const LA = E.filter(x => !cfA || x.analista === cfA);
@@ -609,11 +611,12 @@ function confTela() {
   if (cfF && !fases.includes(cfF)) cfF = '';
   const LF = LA.filter(x => !cfF || faseC(x) === cfF);
   fb.append(chips('Fase', [['', 'Todas', LA.length], ...fases.map(f => [f, f, LA.filter(x => faseC(x) === f).length])], cfF, v => { cfF = v; }),
-    chips('Confissão', [['', 'Todas', LF.length], ['sem', 'Sem', LF.filter(x => !temC(x)).length], ['com', 'Com', LF.filter(temC).length]], cfS, v => { cfS = v; }));
+    chips('Confissão', [['', 'Todas', LF.length], ['sem', 'Sem confissão', LF.filter(x => !temC(x)).length], ['env', 'Falta o cliente assinar', LF.filter(x => x.conf === 'env').length], ['ass', 'Cliente assinou', LF.filter(x => x.conf === 'ass').length]], cfS, v => { cfS = v; }));
   // lista
-  const L = LF.filter(x => !cfS || (cfS === 'com') === temC(x)).sort((a, b) => temC(a) - temC(b) || (b.bloco === 'Assinado') - (a.bloco === 'Assinado') || (b.d_conf || 0) - (a.d_conf || 0));
+  const ordC = x => x.conf === 'ass' ? 2 : x.conf === 'env' ? 1 : 0;
+  const L = LF.filter(x => !cfS || (cfS === 'sem' ? !temC(x) : x.conf === cfS)).sort((a, b) => ordC(a) - ordC(b) || (b.bloco === 'Assinado') - (a.bloco === 'Assinado') || (b.d_conf || 0) - (a.d_conf || 0));
   const box = el('div', 'det'); box.hidden = false; box.style.border = '1px solid var(--li)'; box.style.gridTemplateRows = 'auto minmax(0,1fr) auto';
-  const hh = el('div', 'dh'); hh.append(el('h2', null, (cfA || 'Equipe ' + nm(co)) + (cfF ? ' · ' + cfF : '') + (cfS ? ' · ' + (cfS === 'sem' ? 'sem confissão' : 'com confissão') : '')));
+  const hh = el('div', 'dh'); hh.append(el('h2', null, (cfA || 'Equipe ' + nm(co)) + (cfF ? ' · ' + cfF : '') + (cfS ? ' · ' + ({ sem: 'sem confissão', env: 'falta o cliente assinar', ass: 'cliente assinou' })[cfS] : '')));
   const sub = el('span', 'sub', 'DocuSign conferido ' + dm((D.confRef || '').slice(0, 10)) + ' às ' + (D.confRef || '').slice(11, 16).replace(':', 'h')); sub.style.marginLeft = 'auto'; hh.appendChild(sub);
   if (cfA || cfF || cfS) { const cl = el('button', null, '✕ Limpar filtros'); cl.style.marginLeft = '0'; cl.onclick = go(() => { cfA = cfF = cfS = ''; }); hh.appendChild(cl); }
   const dl = el('div', 'dl'), pgb = el('div', 'pg'); box.append(hh, dl, pgb); s.replaceChildren(top, fb, box);
@@ -622,8 +625,10 @@ function confTela() {
     const a = el('div'); a.append(el('div', 'p', x.nome || x.id.split(' – ')[0]), el('div', 'm', x.id.split(' – ')[1] || ''));
     const f = el('div'); f.append(el('div', 'p', faseC(x)), el('div', 'm', x.bloco === 'Assinado' ? 'contrato Caixa assinado' : 'Conforme'));
     const cf = el('div'); cf.append(el('div', 'p', dm(x.data_conforme)), el('div', 'm', x.d_conf != null ? (x.d_conf === 0 ? 'hoje' : 'há ' + du(x.d_conf)) : ''));
-    const cs = el('div', 'cs'), t = temC(x), ic = el('span', 'ic ' + (t ? 'y' : 'n'), t ? '✓' : '✕'), tx = el('div', 'tx');
-    if (t) tx.append(el('div', 'p', 'Enviada em ' + dm(x.conf_env)), el('div', 'm', x.conf === 'ass' ? 'cliente assinou em ' + dm(x.conf_ass) : (x.conf_obs || 'cliente ainda não assinou')));
+    const cs = el('div', 'cs'), t = temC(x), ic = el('span', 'ic ' + (x.conf === 'ass' ? 'y' : t ? 'w' : 'n'), x.conf === 'ass' ? '✓' : t ? '…' : '✕'), tx = el('div', 'tx');
+    const dE = x.conf_env ? Math.round((new Date((D.confRef || '').slice(0, 10)) - new Date(x.conf_env)) / 864e5) : 0;
+    if (x.conf === 'ass') tx.append(el('div', 'p', 'Cliente assinou em ' + dm(x.conf_ass)), el('div', 'm', 'enviada em ' + dm(x.conf_env) + ' · chegou para ' + (x.coord === 'Patricia' ? 'a Patrícia' : 'o Gustavo') + ' assinar'));
+    else if (t) tx.append(el('div', 'p fl', 'Falta o cliente assinar'), el('div', 'm', 'enviada em ' + dm(x.conf_env) + (dE > 0 ? ' · há ' + dE + (dE > 1 ? ' dias' : ' dia') : ' · hoje') + (x.conf_obs ? ' · ' + x.conf_obs : '')));
     else tx.append(el('div', 'p no', 'Sem confissão'), el('div', 'm', x.bloco === 'Assinado' ? 'contrato assinado sem a confissão' : x.d_conf > 0 ? du(x.d_conf) + ' de atraso · prazo D0' : 'enviar hoje · prazo D0'));
     if (t && x.bloco === 'Assinado' && x.conf !== 'ass') tx.lastChild.style.color = 'var(--red)';
     cs.append(ic, tx); r.append(a, el('span', null, x.analista), f, cf, cs); return r; };
